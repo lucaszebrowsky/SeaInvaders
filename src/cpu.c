@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -340,14 +341,10 @@ uint8_t LDA(cpu_t *cpu)
 
 	switch (cpu->opcode) {
 	case 0x0A:
-		// LDAX B TODO: Do not think this indirect is correct
 		value = readMemoryValue(cpu->BC.reg);
-		printf("LDAX A val: %x, address: %x\n", value, cpu->DE.reg);
 		break;
 	case 0x1A:
-		// LDAX D TODO: Do not think this indirect is correct
 		value = readMemoryValue(cpu->DE.reg);
-		printf("LDAX D val: %x, address: %x\n", value, cpu->DE.reg);
 		break;
 	case 0x3A:
 		cpu->PC++;
@@ -569,9 +566,7 @@ uint8_t MOV(cpu_t *cpu)
 		break;
 	case 0x66:
 		// MOV H,M
-		printf("MOV H,M: Before: %x\n", cpu->HL.reg);
 		cpu->HL.highByte = readMemoryValue(cpu->HL.reg);
-		printf("MOV H,M: after: %x\n", cpu->HL.reg);
 		break;
 	case 0x67:
 		// MOV H,A
@@ -608,7 +603,6 @@ uint8_t MOV(cpu_t *cpu)
 	case 0x6F:
 		// MOV L,A
 		cpu->HL.lowByte = cpu->AF.highByte;
-		printf("MOV L,A: %x\n", cpu->HL.lowByte);
 		break;
 	case 0x70:
 		// MOV M,B
@@ -672,7 +666,6 @@ uint8_t MOV(cpu_t *cpu)
 	case 0x7E:
 		// A,M
 		cpu->AF.highByte = readMemoryValue(cpu->HL.reg);
-		printf("Mov A,H: %x (%x)\n", cpu->AF.highByte, cpu->HL.reg);
 		break;
 	case 0x7F:
 		// MOV A,A
@@ -1040,7 +1033,6 @@ uint8_t ORA(cpu_t *cpu)
 	case 0xB6:
 		// ORA M
 		value = readMemoryValue(cpu->HL.reg);
-		printf("ORA M: value: %x\n", value);
 		break;
 	case 0xB7:
 		// ORA A
@@ -1095,23 +1087,18 @@ uint8_t DAD(cpu_t *cpu)
 {
 	uint16_t word = 0;
 
-	printf("DAD Instruction: HL before: %x\n", cpu->HL.reg);
-
 	switch (cpu->opcode) {
 	case 0x09:
 		// DAD B
 		word = cpu->BC.reg;
-		printf("DAD B: %x(HL: %x)\n", word, cpu->HL.reg);
 		break;
 	case 0x19:
 		// DAD D
 		word = cpu->DE.reg;
-		printf("DAD D: %x(HL: %x)\n", word, cpu->HL.reg);
 		break;
 	case 0x29:
 		// DAD H
 		word = cpu->HL.reg;
-		printf("DAD H: %x\n", word);
 		break;
 	case 0x39:
 		// DAD SP
@@ -1121,12 +1108,6 @@ uint8_t DAD(cpu_t *cpu)
 	default:
 		CPU_CRASH(cpu);
 		break;
-	}
-
-	printf("DAD Value read: %x\n", word);
-
-	if ((cpu->HL.reg + word) > 0xFFFF) {
-		printf("DAD Overflow detected!\n");
 	}
 
 	setFlag(cpu, ((cpu->HL.reg + word) > 0xFFFF), CARRY);
@@ -1561,8 +1542,6 @@ uint8_t RET(cpu_t *cpu)
 */
 uint8_t DAA(cpu_t *cpu)
 {
-	printf("DAA Instruction! PC: %04x\n", cpu->PC);
-
 	if (cpu->AF.lowByte & AUXCARRY || (cpu->AF.highByte & 0x0F) > 9) {
 		cpu->AF.highByte += 6;
 	}
@@ -1642,9 +1621,7 @@ uint8_t POP(cpu_t *cpu)
 		cpu->DE.reg = highByte << 8 | lowByte;
 		break;
 	case 0xE1:
-		printf("POP: HL before: %x\n", cpu->HL.reg);
 		cpu->HL.reg = highByte << 8 | lowByte;
-		printf("POP: HL after: %x\n", cpu->HL.reg);
 		break;
 	case 0xF1:
 		cpu->AF.reg = highByte << 8 | lowByte;
@@ -1671,7 +1648,6 @@ uint8_t PUSH(cpu_t *cpu)
 		reg = cpu->DE;
 		break;
 	case 0xE5:
-		printf("PUSH: HL before: %x\n", cpu->HL.reg);
 		reg = cpu->HL;
 		break;
 	case 0xF5:
@@ -1813,10 +1789,14 @@ uint8_t IN(cpu_t *cpu)
 // Exchange the Low- and High Byte of the memory address stored in SP with HL
 uint8_t XTHL(cpu_t *cpu)
 {
-	// TODO: Check if this is correct
+	uint8_t lowByte = readMemoryValue(cpu->SP);
+	uint8_t highByte = readMemoryValue(cpu->SP + 1);
+
 	writeByteToMemory(cpu->HL.lowByte, cpu->SP);
-	cpu->SP++;
-	writeByteToMemory(cpu->HL.highByte, cpu->SP);
+	writeByteToMemory(cpu->HL.highByte, cpu->SP + 1);
+
+	cpu->HL.lowByte = lowByte;
+	cpu->HL.highByte = highByte;
 
 	cpu->PC++;
 	return 18;
@@ -1917,12 +1897,12 @@ uint8_t executeNextInstruction(cpu_t *cpu)
 	}
 
 	printf("Executing: %02x PC: %04x\n", cpu->opcode, cpu->PC);
-	fprintf(stdout, "A: %02x\tF: %02x\n", cpu->AF.highByte, cpu->AF.lowByte);
-	fprintf(stdout, "B: %02x\tC: %02x\n", cpu->BC.highByte, cpu->BC.lowByte);
-	fprintf(stdout, "D: %02x\tE: %02x\n", cpu->DE.highByte, cpu->DE.lowByte);
-	fprintf(stdout, "H: %02x\tL: %02x\n", cpu->HL.highByte, cpu->HL.lowByte);
-	fprintf(stdout, "PC: %04x\tSP: %04x\n", cpu->PC, cpu->SP);
-	fprintf(stdout, "Coins: %x (Addr: %x)\n", readMemoryValue(0x20EB), 0x20EB);
+	// fprintf(stdout, "A: %02x\tF: %02x\n", cpu->AF.highByte, cpu->AF.lowByte);
+	// fprintf(stdout, "B: %02x\tC: %02x\n", cpu->BC.highByte, cpu->BC.lowByte);
+	// fprintf(stdout, "D: %02x\tE: %02x\n", cpu->DE.highByte, cpu->DE.lowByte);
+	// fprintf(stdout, "H: %02x\tL: %02x\n", cpu->HL.highByte, cpu->HL.lowByte);
+	// fprintf(stdout, "PC: %04x\tSP: %04x\n", cpu->PC, cpu->SP);
+	// fprintf(stdout, "Coins: %x (Addr: %x)\n", readMemoryValue(0x20EB), 0x20EB);
 	// Executing Instruction and returning cycles
 	return (*jumptable[cpu->opcode])(cpu);
 }
