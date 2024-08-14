@@ -2,38 +2,39 @@
 #include <SDL2/SDL_scancode.h>
 #include <stdint.h>
 #include <stdio.h>
-// #include <stdlib.h>
 #include <SDL2/SDL_events.h>
 
 #include "bus.h"
 #include "cpu.h"
 #include "renderer.h"
 
-// const int keymap[] = {
-// 	SDL_SCANCODE_A,	   SDL_SCANCODE_D, // Player 2 Left/Right
-// 	SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, // Player 1 Left/Right
-// 	SDL_SCANCODE_1,	   SDL_SCANCODE_2, // Select Player 1 or 2 Mode
-// 	SDL_SCANCODE_UP, // Player 1 Fire
-// 	SDL_SCANCODE_W, // Player 2 Fire,
-// 	SDL_SCANCODE_C // Credit
-// };
-
 void handle_input(cpu_t *cpu)
 {
 	uint8_t p1_input = 0;
-	// uint8_t p2_input = 0;
+	// uint8_t p2_input = cpu->io_port[2];
 
 	const uint8_t *keystate = SDL_GetKeyboardState(NULL);
 
-	p1_input |= keystate[SDL_SCANCODE_C];
-	p1_input = p1_input | (keystate[SDL_SCANCODE_1] << 2);
+	// Handle generic inputs
+	p1_input |= (keystate[SDL_SCANCODE_C] << 0); // Credit -> Port 1, Bit 0
+	p1_input |= (keystate[SDL_SCANCODE_1] << 2); // 1P Start -> Port 1, Bit 2
+	p1_input |= (keystate[SDL_SCANCODE_2] << 1); // 2P Start -> Port 1, Bit 1
+	// p1_input |= (1 << 3); // Bit 3 is always 1
 
-	p1_input = p1_input | (keystate[SDL_SCANCODE_2] << 1);
+	// Handle Player 1 inputs
+	p1_input |= (keystate[SDL_SCANCODE_UP] << 4); // 1P Fire -> Port 1, Bit 4
+	p1_input |= (keystate[SDL_SCANCODE_LEFT] << 5); // 1P Left -> Port 1, Bit 5
+	p1_input |=
+		(keystate[SDL_SCANCODE_RIGHT] << 6); // 1P Right -> Port 1, Bit 6
 
+	// Handle Player 2 inputs
+	// p2_input |= (keystate[SDL_SCANCODE_W] << 4); // 2P Fire -> Port 2, Bit 4
+	// p2_input |= (keystate[SDL_SCANCODE_A] << 5); // 2P Left -> Port 2, Bit 5
+	// p2_input |= (keystate[SDL_SCANCODE_D] << 6); // 2P Right -> Port 2, Bit 6
+
+	// Write the calculated inputs to the CPU ports
 	cpu->io_port[1] = p1_input;
-
-	// for (uint8_t i = 0; i < 2; i++) {
-	// }
+	// cpu->io_port[2] = p2_input;
 }
 
 void emu_run(cpu_t *cpu, memory_t *memory)
@@ -66,7 +67,7 @@ void emu_run(cpu_t *cpu, memory_t *memory)
 int main(int argc, char *argv[])
 {
 	if (argc != 2) {
-		printf("Usdage: %s <path_to_rom>\n", argv[0]);
+		printf("Usage: %s <path_to_rom>\n", argv[0]);
 		return 1;
 	}
 
