@@ -35,12 +35,17 @@ void loadROM(char *path)
 		exit(EXIT_FAILURE);
 	}
 
-	size_t result = fread(_memory->rom, sizeof(_memory->rom), 1, file);
+	// size_t result =
+	fread(_memory->rom + 0x100, sizeof(_memory->rom), 1, file);
+	_memory->rom[0] = 0xc3;
+	_memory->rom[1] = 0xc2;
+	_memory->rom[0] = 0x05;
+	_memory->rom[368] = 0x7;
 
-	if (1 != result) {
-		fprintf(stderr, "Failed to load ROM into memory!");
-		exit(EXIT_FAILURE);
-	}
+	// if (1 != result) {
+	// 	fprintf(stderr, "Failed to load ROM into memory!");
+	// 	exit(EXIT_FAILURE);
+	// }
 
 	printf("Rom loaded successfully!\n");
 
@@ -87,19 +92,17 @@ uint8_t *getAddressPointer(uint16_t address)
 //  Write a 8-Bit value to a specific address in memory
 void writeByteToMemory(uint8_t data, uint16_t address)
 {
-	if (address == 0x20F7 && data == 0xff) {
-		printf("BUS write: 0x20F7, data: %x\n", data);
-		// exit(1);
-	}
-	if (address >= 0x2000 && address <= 0x23FF) {
+	if (address <= 0x1fff) {
+		_memory->rom[address] = data;
+	} else if (address >= 0x2000 && address <= 0x23FF) {
 		_memory->ram[address - 0x2000] = data;
 	} else if (address >= 0x2400 && address <= 0x3FFF) {
-		printf("VRAM (%x): %x\n", address, data);
+		// printf("VRAM (%x): %x\n", address, data);
 		_memory->vram[address - 0x2400] = data;
 	} else if (address >= 0x4000 && address <= 0x43FF) { // Mirror of RAM
 		_memory->ram[address - 0x4000] = data;
 	} else if (address >= 0x4400 && address <= 0x5FFF) { // Mirror of VRAM
-		printf("VRAM (%x): %x\n", address, data);
+		// printf("VRAM (%x): %x\n", address, data);
 		_memory->vram[address - 0x4400] = data;
 	} else {
 		fprintf(stderr,
