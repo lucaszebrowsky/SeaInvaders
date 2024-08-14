@@ -21,7 +21,7 @@ void initSDL(void)
 
 	// Note: The screen in the cabinet is rotated by 90 degrees counter clockwise
 	// so we swap the HEIGHT and the WIDTH for the SDL Window accordingly
-	window = SDL_CreateWindow("Space Invaders", SDL_WINDOWPOS_CENTERED,
+	window = SDL_CreateWindow("SeaInvaders", SDL_WINDOWPOS_CENTERED,
 							  SDL_WINDOWPOS_CENTERED, HEIGHT * SCALE,
 							  WIDTH * SCALE, 0);
 
