@@ -40,4 +40,7 @@ target_link_libraries(${TARGET}
     -fsanitize=undefined
     -fsanitize=leak
   >
+  $<$<CONFIG:Release>:
+    m
+  >
 )
