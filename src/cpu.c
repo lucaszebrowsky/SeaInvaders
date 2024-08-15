@@ -53,7 +53,7 @@ void setFlag(cpu_t *cpu, uint8_t condition, enum FLAGS flag)
 	}
 }
 
-// Count the number of bits is odd/even
+// Count the number of bits that are set,
 // returns 0 on odd, 1 on even
 uint8_t parity(uint8_t byte)
 {
@@ -117,7 +117,6 @@ uint8_t INR(cpu_t *cpu)
 
 	setFlag(cpu, (*result & 0x80), SIGN);
 	setFlag(cpu, (*result == 0), ZERO);
-	// setFlag(cpu, !(*result & 0x1), PARITY);
 	setFlag(cpu, parity(*result), PARITY);
 
 	cpu->PC++;
@@ -192,7 +191,6 @@ uint8_t DCR(cpu_t *cpu)
 
 	setFlag(cpu, ((*result) & 0x80), SIGN);
 	setFlag(cpu, ((*result) == 0), ZERO);
-	// setFlag(cpu, !((*result) & 0x1), PARITY);
 	setFlag(cpu, parity(*result), PARITY);
 
 	cpu->PC++;
@@ -399,7 +397,10 @@ uint8_t LHLD(cpu_t *cpu)
 	cpu->PC++;
 	uint8_t highByte = readMemoryValue(cpu->PC);
 
-	cpu->HL.reg = highByte << 8 | lowByte;
+	uint16_t address = highByte << 8 | lowByte;
+
+	cpu->HL.lowByte = readMemoryValue(address);
+	cpu->HL.highByte = readMemoryValue(address + 1);
 
 	cpu->PC++;
 	return 16;
@@ -755,7 +756,6 @@ uint8_t ADD(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -782,8 +782,6 @@ uint8_t ADI(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -807,7 +805,6 @@ uint8_t ACI(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -928,7 +925,6 @@ uint8_t ANA(cpu_t *cpu)
 	setFlag(cpu, 0, CARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -946,7 +942,6 @@ uint8_t ANI(cpu_t *cpu)
 	setFlag(cpu, 0, AUXCARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x01), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1003,7 +998,6 @@ uint8_t XRA(cpu_t *cpu)
 	setFlag(cpu, 0, AUXCARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1022,7 +1016,6 @@ uint8_t XRI(cpu_t *cpu)
 	setFlag(cpu, 0, AUXCARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1079,7 +1072,6 @@ uint8_t ORA(cpu_t *cpu)
 	setFlag(cpu, 0, AUXCARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1098,7 +1090,6 @@ uint8_t ORI(cpu_t *cpu)
 	setFlag(cpu, 0, AUXCARRY);
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1256,7 +1247,6 @@ uint8_t SUB(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1319,7 +1309,6 @@ uint8_t SBB(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1341,7 +1330,6 @@ uint8_t SUI(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1365,7 +1353,6 @@ uint8_t SBI(cpu_t *cpu)
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -1424,7 +1411,6 @@ uint8_t CMP(cpu_t *cpu)
 
 	setFlag(cpu, result == 0, ZERO);
 	setFlag(cpu, result & 0x80, SIGN);
-	// setFlag(cpu, !(result & 0x1), PARITY);
 	setFlag(cpu, parity(result), PARITY);
 
 	cpu->PC++;
@@ -1444,7 +1430,6 @@ uint8_t CPI(cpu_t *cpu)
 
 	setFlag(cpu, result == 0, ZERO);
 	setFlag(cpu, result & 0x80, SIGN);
-	// setFlag(cpu, !(result & 0x1), PARITY);
 	setFlag(cpu, parity(result), PARITY);
 
 	cpu->PC++;
@@ -1454,7 +1439,7 @@ uint8_t CPI(cpu_t *cpu)
 // Call Subroutine, next 2 Bytes provide the address
 uint8_t CALL(cpu_t *cpu)
 {
-	// CPUDIOG
+	// CPUDIAG
 	uint16_t foo = readMemoryValue(cpu->PC + 2) | readMemoryValue(cpu->PC + 1);
 	if (foo == 5) {
 		if (cpu->BC.lowByte == 9) {
@@ -1906,7 +1891,7 @@ uint8_t XCHG(cpu_t *cpu)
 }
 
 // Fetch next instruction, execute it and return the cycles it took
-uint8_t executeNextInstruction(cpu_t *cpu)
+uint8_t step(cpu_t *cpu)
 {
 	// jumptable to the different instructions
 	static uint8_t (*jumptable[256])(cpu_t *cpu) = {

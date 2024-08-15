@@ -49,7 +49,7 @@ enum FLAGS {
 void initCPU(cpu_t *cpu);
 
 // Fetch next instruction, execute it and return the cycles it took
-uint8_t executeNextInstruction(cpu_t *cpu);
+uint8_t step(cpu_t *cpu);
 
 // Set the Interrupt Subroutine (Interrupts need to be enabled)
 void setInterruptRoutine(cpu_t *cpu, uint8_t interrupt);
