@@ -1,3 +1,5 @@
+#include <SDL2/SDL_video.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
 
@@ -6,7 +8,7 @@
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
-#define SCALE 2
+#define SCALE 3
 
 // 256x224 Pixels
 #define WIDTH 256
@@ -21,12 +23,13 @@ void initSDL(void)
 
 	// Note: The screen in the cabinet is rotated by 90 degrees counter clockwise
 	// so we swap the HEIGHT and the WIDTH for the SDL Window accordingly
-	window = SDL_CreateWindow("SeaInvaders", SDL_WINDOWPOS_CENTERED,
-							  SDL_WINDOWPOS_CENTERED, HEIGHT * SCALE,
-							  WIDTH * SCALE, 0);
+	window = SDL_CreateWindow("SeaInvaders", SDL_WINDOWPOS_UNDEFINED,
+							  SDL_WINDOWPOS_UNDEFINED, HEIGHT * SCALE,
+							  WIDTH * SCALE, SDL_WINDOW_RESIZABLE);
 
 	if (NULL == window) {
 		fprintf(stderr, "Could not create SDL Window!\n");
+		SDL_Quit();
 		exit(EXIT_FAILURE);
 	}
 
@@ -34,6 +37,8 @@ void initSDL(void)
 
 	if (NULL == renderer) {
 		fprintf(stderr, "Could not create SDL Renderer!\n");
+		SDL_DestroyWindow(window);
+		SDL_Quit();
 		exit(EXIT_FAILURE);
 	}
 }
@@ -53,6 +58,13 @@ void killSDL(void)
 
 void drawScreen(memory_t *memory)
 {
+	int32_t width = 0;
+	int32_t height = 0;
+	SDL_GetWindowSize(window, &width, &height);
+
+	float scale_x = (float)width / HEIGHT;
+	float scale_y = (float)height / WIDTH;
+
 	// First clear the whole screen
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
@@ -92,21 +104,24 @@ void drawScreen(memory_t *memory)
 				// this causes the normal x,y coordinate system to become x',y' where x' = y and y' = x
 				// but since the top left is 0,0, and the bottom left is max_x we need to substract y' from max_x
 
-				SDL_RenderDrawPoint(renderer, y * SCALE,
-									(WIDTH - 1 - x) * SCALE);
+				// Using rectangles as pixels instead of just small dots looks
+				// cleaner but the dot way looks more retro :D
 
-				/*
+				// SDL_RenderDrawPoint(renderer, y * SCALE,
+				// 					(WIDTH - 1 - x) * SCALE);
 
-				// Using rectangles as pixels instead of just small dots looks 
-				// cleaner but the dot way looks more retro so :D
 				SDL_Rect rect;
-				rect.x = y * SCALE;
-				rect.y = (WIDTH - 1 - x) * SCALE;
-				rect.w = SCALE;
-				rect.h = SCALE;
+
+				rect.x =
+					(int)(y *
+						  scale_x); // Scale the y-coordinate to fit the new width
+				rect.y =
+					(int)((WIDTH - 1 - x) *
+						  scale_y); // Scale the x-coordinate (inverted) to fit the new height
+				rect.w = (int)(scale_x); // Scale the rectangle width
+				rect.h = (int)(scale_y);
 
 				SDL_RenderFillRect(renderer, &rect);
-				*/
 			}
 		}
 	}
