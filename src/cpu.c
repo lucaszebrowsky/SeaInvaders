@@ -16,8 +16,7 @@ void initCPU(cpu_t *cpu)
 	cpu->HL.reg = 0;
 
 	cpu->SP = 0;
-	// cpu->PC = 0;
-	cpu->PC = 0x100;
+	cpu->PC = 0;
 
 	cpu->interrupt = 0;
 
@@ -111,7 +110,8 @@ uint8_t INR(cpu_t *cpu)
 		break;
 	}
 
-	setFlag(cpu, ((*result & 0x8) != ((*result + 1) & 0x8)), AUXCARRY);
+	uint8_t aux = (((*result) & 0x0F) + 1 > 0x0F);
+	setFlag(cpu, aux, AUXCARRY);
 
 	(*result)++;
 
@@ -185,7 +185,8 @@ uint8_t DCR(cpu_t *cpu)
 		break;
 	}
 
-	setFlag(cpu, ((*result & 0x8) != ((*result - 1) & 0x8)), AUXCARRY);
+	uint8_t aux = (((*result) & 0x0F) - 1) < 0x0F;
+	setFlag(cpu, aux, AUXCARRY);
 
 	(*result)--;
 
@@ -694,9 +695,10 @@ uint8_t MOV(cpu_t *cpu)
 	}
 
 	uint8_t cycles_lookup[64] = {
-		5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5,
-		7, 5, 5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5,
-		5, 5, 7, 5, 7, 7, 7, 7, 7, 7, 0, 7, 5, 5, 5, 5, 5, 5, 7, 5,
+		5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, // 0x40 - 0x4F
+		5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, // 0x50 - 0x5f
+		5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, // 0x60 - 0x6f
+		7, 7, 7, 7, 7, 7, 0, 7, 5, 5, 5, 5, 5, 5, 7, 5, // 0x70 - 0x7f
 	};
 
 	cpu->PC++;
@@ -747,10 +749,10 @@ uint8_t ADD(cpu_t *cpu)
 		break;
 	}
 
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) + (value & 0x0F)) > 0x0F;
+
 	setFlag(cpu, ((cpu->AF.highByte + value) > 0xFF), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte + value) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte += value;
 
@@ -767,18 +769,12 @@ uint8_t ADI(cpu_t *cpu)
 {
 	cpu->PC++;
 	uint8_t value = readMemoryValue(cpu->PC);
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) + (value & 0x0F)) > 0x0F;
 
 	setFlag(cpu, ((cpu->AF.highByte + value) > 0xFF), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte + value) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
-	printf("Before ADI A: %x, Val: %x, F: %x\n", cpu->AF.highByte, value,
-		   cpu->AF.lowByte);
 	cpu->AF.highByte += value;
-	printf("After ADI A: %x, Val: %x, F: %x\n", cpu->AF.highByte, value,
-		   cpu->AF.lowByte);
-	printf("Condidtion: %x\n", parity(cpu->AF.highByte));
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
@@ -794,12 +790,10 @@ uint8_t ACI(cpu_t *cpu)
 	cpu->PC++;
 	uint8_t val = readMemoryValue(cpu->PC);
 	uint8_t carry = cpu->AF.lowByte & 1;
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) + ((val + carry) & 0x0F)) > 0x0F;
 
 	setFlag(cpu, ((cpu->AF.highByte + val + carry) > 0xFF), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) !=
-			 ((cpu->AF.highByte + val + carry) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte = cpu->AF.highByte + val + carry;
 
@@ -855,17 +849,15 @@ uint8_t ADC(cpu_t *cpu)
 		break;
 	}
 
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) + ((value + carry) & 0x0F)) > 0x0F;
+
 	setFlag(cpu, ((cpu->AF.highByte + value + carry) > 0xFF), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) !=
-			 ((cpu->AF.highByte + value + carry) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte = cpu->AF.highByte + value + carry;
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
-	// setFlag(cpu, !(cpu->AF.highByte & 0x1), PARITY);
 	setFlag(cpu, parity(cpu->AF.highByte), PARITY);
 
 	cpu->PC++;
@@ -916,9 +908,8 @@ uint8_t ANA(cpu_t *cpu)
 		break;
 	}
 
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte & value) & 0x8)),
-			AUXCARRY);
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) + (value & 0x0F)) > 0x0F;
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte &= value;
 
@@ -1008,9 +999,9 @@ uint8_t XRA(cpu_t *cpu)
 uint8_t XRI(cpu_t *cpu)
 {
 	cpu->PC++;
-	uint8_t val = readMemoryValue(cpu->PC);
+	uint8_t value = readMemoryValue(cpu->PC);
 
-	cpu->AF.highByte ^= val;
+	cpu->AF.highByte ^= value;
 
 	setFlag(cpu, 0, CARRY);
 	setFlag(cpu, 0, AUXCARRY);
@@ -1082,9 +1073,9 @@ uint8_t ORA(cpu_t *cpu)
 uint8_t ORI(cpu_t *cpu)
 {
 	cpu->PC++;
-	uint8_t val = readMemoryValue(cpu->PC);
+	uint8_t value = readMemoryValue(cpu->PC);
 
-	cpu->AF.highByte |= val;
+	cpu->AF.highByte |= value;
 
 	setFlag(cpu, 0, CARRY);
 	setFlag(cpu, 0, AUXCARRY);
@@ -1099,6 +1090,7 @@ uint8_t ORI(cpu_t *cpu)
 // Halt the CPU TODO: IMPLEMENTION
 uint8_t HLT(cpu_t *cpu)
 {
+	fprintf(stderr, "HLT instruction not implemented!\n");
 	CPU_CRASH(cpu);
 	cpu->PC++;
 	return 7;
@@ -1238,10 +1230,9 @@ uint8_t SUB(cpu_t *cpu)
 		break;
 	}
 
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - (value & 0x0F)) < 0x0F;
 	setFlag(cpu, (cpu->AF.highByte < value), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte - value) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte -= value;
 
@@ -1299,11 +1290,9 @@ uint8_t SBB(cpu_t *cpu)
 		break;
 	}
 
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - ((value + carry) & 0x0F)) < 0x0F;
 	setFlag(cpu, (cpu->AF.highByte < (value + carry)), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) !=
-			 ((cpu->AF.highByte - value - carry) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	cpu->AF.highByte = cpu->AF.highByte - value - carry;
 
@@ -1320,13 +1309,13 @@ uint8_t SBB(cpu_t *cpu)
 uint8_t SUI(cpu_t *cpu)
 {
 	cpu->PC++;
-	uint8_t val = readMemoryValue(cpu->PC);
+	uint8_t value = readMemoryValue(cpu->PC);
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - (value & 0x0F)) < 0x0F;
 
-	setFlag(cpu, (cpu->AF.highByte < val), CARRY);
-	setFlag(cpu, ((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte - val) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, (cpu->AF.highByte < value), CARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
-	cpu->AF.highByte = cpu->AF.highByte - val;
+	cpu->AF.highByte = cpu->AF.highByte - value;
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
@@ -1340,16 +1329,14 @@ uint8_t SUI(cpu_t *cpu)
 uint8_t SBI(cpu_t *cpu)
 {
 	cpu->PC++;
-	uint8_t val = readMemoryValue(cpu->PC);
+	uint8_t value = readMemoryValue(cpu->PC);
 	uint8_t carry = cpu->AF.lowByte & 1;
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - ((value + carry) & 0x0F)) < 0x0F;
 
-	setFlag(cpu, (cpu->AF.highByte < (val + carry)), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) !=
-			 ((cpu->AF.highByte - val - carry) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, (cpu->AF.highByte < (value + carry)), CARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
-	cpu->AF.highByte = cpu->AF.highByte - val - carry;
+	cpu->AF.highByte = cpu->AF.highByte - value - carry;
 
 	setFlag(cpu, cpu->AF.highByte == 0, ZERO);
 	setFlag(cpu, cpu->AF.highByte & 0x80, SIGN);
@@ -1401,11 +1388,10 @@ uint8_t CMP(cpu_t *cpu)
 		CPU_CRASH(cpu);
 		break;
 	}
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - (value & 0x0F)) < 0x0F;
 
 	setFlag(cpu, (cpu->AF.highByte < value), CARRY);
-	setFlag(cpu,
-			((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte - value) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
 	uint8_t result = cpu->AF.highByte - value;
 
@@ -1420,13 +1406,13 @@ uint8_t CMP(cpu_t *cpu)
 uint8_t CPI(cpu_t *cpu)
 {
 	cpu->PC++;
-	uint8_t val = readMemoryValue(cpu->PC);
+	uint8_t value = readMemoryValue(cpu->PC);
+	uint8_t aux = ((cpu->AF.highByte & 0x0F) - (value & 0x0F)) < 0x0F;
 
-	setFlag(cpu, (cpu->AF.highByte < val), CARRY);
-	setFlag(cpu, ((cpu->AF.highByte & 0x8) != ((cpu->AF.highByte - val) & 0x8)),
-			AUXCARRY);
+	setFlag(cpu, (cpu->AF.highByte < value), CARRY);
+	setFlag(cpu, aux, AUXCARRY);
 
-	uint8_t result = cpu->AF.highByte - val;
+	uint8_t result = cpu->AF.highByte - value;
 
 	setFlag(cpu, result == 0, ZERO);
 	setFlag(cpu, result & 0x80, SIGN);
@@ -1439,40 +1425,21 @@ uint8_t CPI(cpu_t *cpu)
 // Call Subroutine, next 2 Bytes provide the address
 uint8_t CALL(cpu_t *cpu)
 {
-	// CPUDIAG
-	uint16_t foo = readMemoryValue(cpu->PC + 2) | readMemoryValue(cpu->PC + 1);
-	if (foo == 5) {
-		if (cpu->BC.lowByte == 9) {
-			uint16_t offset = cpu->DE.reg;
-			uint8_t byte = 0;
-			while ((byte = readMemoryValue(offset++)) != '$') {
-				printf("%c", byte);
-			}
-			printf("\n");
-		}
-	} else if (foo == 0) {
-		exit(0);
-	} else {
-		//CPUDIAG
+	cpu->PC++;
+	uint8_t lowByte = readMemoryValue(cpu->PC);
+	cpu->PC++;
+	uint8_t highByte = readMemoryValue(cpu->PC);
+	cpu->PC++;
 
-		cpu->PC++;
-		uint8_t lowByte = readMemoryValue(cpu->PC);
-		cpu->PC++;
-		uint8_t highByte = readMemoryValue(cpu->PC);
-		cpu->PC++; // TODO: Check this
+	cpu->SP--;
+	writeByteToMemory(cpu->PC >> 8, cpu->SP);
+	cpu->SP--;
+	writeByteToMemory(cpu->PC & 0xFF, cpu->SP);
 
-		cpu->SP--;
-		writeByteToMemory(cpu->PC >> 8, cpu->SP);
-		cpu->SP--;
-		writeByteToMemory(cpu->PC & 0xFF, cpu->SP);
-
-		cpu->PC = highByte << 8 | lowByte;
-	}
+	cpu->PC = highByte << 8 | lowByte;
 	return 17;
 }
 
-// TODO: Check the Condition logic!
-// TODO: IMPORTANT
 // Call Subroutine if Condition is true
 uint8_t CALLC(cpu_t *cpu)
 {
@@ -1522,6 +1489,7 @@ uint8_t CALLC(cpu_t *cpu)
 	uint8_t lowByte = readMemoryValue(cpu->PC);
 	cpu->PC++;
 	uint8_t highByte = readMemoryValue(cpu->PC);
+	cpu->PC++;
 
 	cpu->SP--;
 	writeByteToMemory(cpu->PC >> 8, cpu->SP);
@@ -1573,18 +1541,23 @@ uint8_t RET(cpu_t *cpu)
 uint8_t DAA(cpu_t *cpu)
 {
 	if (cpu->AF.lowByte & AUXCARRY || (cpu->AF.highByte & 0x0F) > 9) {
+		uint8_t aux = ((cpu->AF.highByte & 0x0F) + 6) > 0x0F;
+		setFlag(cpu, aux, AUXCARRY);
 		cpu->AF.highByte += 6;
 	}
 
 	if (cpu->AF.lowByte & CARRY || ((cpu->AF.highByte >> 4) > 9)) {
+		setFlag(cpu, ((cpu->AF.highByte + 0x60) > 0xFF), CARRY);
 		cpu->AF.highByte += (6 << 4);
+		setFlag(cpu, cpu->AF.highByte == 0, ZERO);
+		setFlag(cpu, parity(cpu->AF.highByte), PARITY);
+		setFlag(cpu, (cpu->AF.highByte & 0x80), SIGN);
 	}
 
 	cpu->PC++;
 	return 4;
 }
 
-// TODO: Check the Condition logic!
 // Ret if Condition is true. Grouped Instructions
 uint8_t RETC(cpu_t *cpu)
 {
@@ -1639,9 +1612,8 @@ uint8_t RETC(cpu_t *cpu)
 uint8_t POP(cpu_t *cpu)
 {
 	uint8_t lowByte = readMemoryValue(cpu->SP);
-	cpu->SP++;
-	uint8_t highByte = readMemoryValue(cpu->SP);
-	cpu->SP++;
+	uint8_t highByte = readMemoryValue(cpu->SP + 1);
+	cpu->SP += 2;
 
 	switch (cpu->opcode) {
 	case 0xC1:
@@ -1689,17 +1661,16 @@ uint8_t PUSH(cpu_t *cpu)
 		break;
 	}
 
-	cpu->SP--;
-	writeByteToMemory(reg.highByte, cpu->SP);
-	cpu->SP--;
-	writeByteToMemory(reg.lowByte, cpu->SP);
+	writeByteToMemory(reg.highByte, cpu->SP - 1);
+	writeByteToMemory(reg.lowByte, cpu->SP - 2);
+
+	cpu->SP -= 2;
 
 	cpu->PC++;
 	return 11;
 }
 
 // Jump on Condition
-// TODO: NEEDS CHECKING
 uint8_t JMPC(cpu_t *cpu)
 {
 	uint8_t condition = 0;
@@ -1762,32 +1733,28 @@ uint8_t JMP(cpu_t *cpu)
 	return 10;
 }
 
-// TODO: Check where Accumulator would be written to
 uint8_t OUT(cpu_t *cpu)
 {
 	cpu->PC++;
 	uint8_t port = readMemoryValue(cpu->PC);
-	printf("OUT: Port: %02x at PC: %04x \n", port, cpu->PC);
 
 	switch (port) {
 	case 2:
-		printf("Shift Offset!\n");
 		setShiftOffset(cpu->AF.highByte);
-		//exit(1);
 		break;
 	case 3:
-		printf("OUT (File: %s, Line: %d): Sound not implemented yet\n",
-			   __FILE__, __LINE__);
+		// printf("OUT (File: %s, Line: %d): Sound not implemented yet\n",
+		// 	   __FILE__, __LINE__);
 		// cpu->io_port[3] = cpu->AF.highByte;
 		break;
 	case 4:
 		setShiftRegister(cpu->AF.highByte);
-		printf("Shift Register!\n");
+		// printf("Shift Register!\n");
 		//exit(1);
 		break;
 	case 5:
-		printf("OUT (File: %s, Line: %d): Sound not implemented yet\n",
-			   __FILE__, __LINE__);
+		// printf("OUT (File: %s, Line: %d): Sound not implemented yet\n",
+		// 	   __FILE__, __LINE__);
 		// cpu->io_port[5] = cpu->AF.highByte;
 		break;
 	case 6: // Watchdog
@@ -1801,29 +1768,19 @@ uint8_t OUT(cpu_t *cpu)
 	}
 
 	cpu->PC++;
-	// CPU_CRASH(cpu); TODO: Needs implementation
 	return 10;
 }
 
-// TODO: Check where the CPU would read from
 uint8_t IN(cpu_t *cpu)
 {
 	cpu->PC++;
 	uint8_t port = readMemoryValue(cpu->PC);
 
-	printf("IN: Port: %02x at PC: %04x \n", port, cpu->PC);
-
 	if (port != 3) {
 		cpu->AF.highByte = cpu->io_port[port];
 	} else {
 		cpu->AF.highByte = getShiftRegister();
-		printf("IN (Shift): %x\n", cpu->AF.highByte);
 	}
-
-	// if (port == 2) {
-	// 	printf("IN 2: %x\n", cpu->io_port[2]);
-	// 	exit(1);
-	// }
 
 	cpu->PC++;
 
@@ -1846,19 +1803,17 @@ uint8_t XTHL(cpu_t *cpu)
 	return 18;
 }
 
-// Disable Interrupts TODO: Implementation
+// Disable Interrupts
 uint8_t DI(cpu_t *cpu)
 {
-	printf("Disabling Interrupts. PC: %04x\n", cpu->PC);
 	cpu->interrupt_enabled = 0;
 	cpu->PC++;
 	return 4;
 }
 
-// Enable Interrupts TODO: Implementation
+// Enable Interrupts
 uint8_t EI(cpu_t *cpu)
 {
-	printf("Enabling Interrupts. PC: %04x\n", cpu->PC);
 	cpu->interrupt_enabled = 1;
 	cpu->PC++;
 	return 4;
@@ -1934,20 +1889,12 @@ uint8_t step(cpu_t *cpu)
 	// subroutine
 	if (cpu->interrupt_enabled && cpu->interrupt) {
 		cpu->opcode = cpu->interrupt;
-		printf("Interrupt Routine: %02x\n", cpu->interrupt);
 		cpu->interrupt = 0;
 	} else {
 		cpu->opcode = readMemoryValue(cpu->PC);
 	}
 
-	printf("Executing: %02x PC: %04x\n", cpu->opcode, cpu->PC);
-	// fprintf(stdout, "A: %02x\tF: %02x\n", cpu->AF.highByte, cpu->AF.lowByte);
-	// fprintf(stdout, "B: %02x\tC: %02x\n", cpu->BC.highByte, cpu->BC.lowByte);
-	// fprintf(stdout, "D: %02x\tE: %02x\n", cpu->DE.highByte, cpu->DE.lowByte);
-	// fprintf(stdout, "H: %02x\tL: %02x\n", cpu->HL.highByte, cpu->HL.lowByte);
-	// fprintf(stdout, "PC: %04x\tSP: %04x\n", cpu->PC, cpu->SP);
-	// fprintf(stdout, "Coins: %x (Addr: %x)\n", readMemoryValue(0x20EB), 0x20EB);
-	// Executing Instruction and returning cycles
+	// printf("Executing: %02x PC: %04x\n", cpu->opcode, cpu->PC);
 	return (*jumptable[cpu->opcode])(cpu);
 }
 
