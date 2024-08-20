@@ -59,7 +59,7 @@ You can run the emulator via:
 ./build/SeaInvaders rom/SpaceInvaders.bin
 ```
 
-# Control Sheme
+# Control Scheme
 
 | Key         |        Action        |
 | ----------- | :------------------: |
