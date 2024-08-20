@@ -9,13 +9,13 @@ You will need the SDL2 libraries, cmake and a C11 compatible compiler. The emula
 ## Arch
 
 ```shell
-sudo pacman -Syu clang sdl2 cmake
+sudo pacman -Syu clang sdl2 cmake git
 ```
 
 ## Debian/Ubuntu
 
 ```shell
-sudo apt install clang sdl2 cmake
+sudo apt install clang libsdl2-dev cmake git
 ```
 
 # Compilation
