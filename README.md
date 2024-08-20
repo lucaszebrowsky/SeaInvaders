@@ -72,3 +72,8 @@ You can run the emulator via:
 | w           |   Player 2: Shoot    |
 | a           | Player 2: move Left  |
 | d           | Player 2: move Right |
+
+# Screentshots
+
+![Space Invaders Mainscreen](/screenshots/screen_0.png)
+![Space Invaders in Action](/screenshots/screen_1.png)
