@@ -8,7 +8,7 @@
 void handle_input(cpu_t *cpu)
 {
 	uint8_t p1_input = 0;
-	// uint8_t p2_input = 0;
+	uint8_t p2_input = 0;
 
 	SDL_PumpEvents();
 	const uint8_t *keystate = SDL_GetKeyboardState(NULL);
@@ -26,13 +26,13 @@ void handle_input(cpu_t *cpu)
 		(keystate[SDL_SCANCODE_RIGHT] << 6); // 1P Right -> Port 1, Bit 6
 
 	// Handle Player 2 inputs
-	// p2_input |= (keystate[SDL_SCANCODE_W] << 4); // 2P Fire -> Port 2, Bit 4
-	// p2_input |= (keystate[SDL_SCANCODE_A] << 5); // 2P Left -> Port 2, Bit 5
-	// p2_input |= (keystate[SDL_SCANCODE_D] << 6); // 2P Right -> Port 2, Bit 6
+	p2_input |= (keystate[SDL_SCANCODE_W] << 4); // 2P Fire -> Port 2, Bit 4
+	p2_input |= (keystate[SDL_SCANCODE_A] << 5); // 2P Left -> Port 2, Bit 5
+	p2_input |= (keystate[SDL_SCANCODE_D] << 6); // 2P Right -> Port 2, Bit 6
 
 	// Write the calculated inputs to the CPU ports
 	cpu->io_port[1] = p1_input;
-	// cpu->io_port[2] = p2_input;
+	cpu->io_port[2] = p2_input;
 }
 
 void handle_events(cpu_t *cpu, uint8_t *running)
