@@ -50,10 +50,25 @@ This will generate an executable called **SeaInvaders** in the build directory.
 
 # Loading the ROM
 
-In the `rom` folder you will find the original **Taito Space Invaders** rom.
+> [!Note]
+> In the **rom** directory you will find the original **Taito Space Invaders** rom.
 
 You can run the emulator via:
 
 ```shell
 ./build/SeaInvaders rom/SpaceInvaders.bin
 ```
+
+# Control Sheme
+
+| Key         |        Action        |
+| ----------- | :------------------: |
+| c           |     Insert Coin      |
+| 1           | Select 1 Player Mode |
+| 2           | Select 2 Player Mode |
+| Arrow_UP    |   Player 1: Shoot    |
+| Arrow_LEFT  | Player 1: move Left  |
+| Arrow_RIGHT | Player 1: move Right |
+| w           |   Player 2: Shoot    |
+| a           | Player 2: move Left  |
+| d           | Player 2: move Right |
