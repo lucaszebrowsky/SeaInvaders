@@ -10,6 +10,7 @@ typedef union _reg {
 } reg_t;
 
 typedef struct cpu {
+	uint8_t io_port[0x8];
 	reg_t AF; // Register Pair A and Flags
 	reg_t BC; // Register Pair B and C
 	reg_t DE; // Register Pair D and E
@@ -17,7 +18,6 @@ typedef struct cpu {
 	uint16_t SP; // Stack Pointer
 	uint16_t PC; // Programm Counter
 	uint8_t opcode;
-	uint8_t io_port[0x8];
 	uint8_t interrupt;
 	uint8_t interrupt_enabled;
 } cpu_t;
