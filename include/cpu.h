@@ -22,29 +22,6 @@ typedef struct cpu {
 	uint8_t interrupt_enabled;
 } cpu_t;
 
-/*
- *   Flags
- *
- *   Bit:    7 6 5 4 3 2 1 0
- *   Flag:   S Z 0 A 0 P 1 C
- *
- *   S - Sign Flag
- *   Z - Zero Flag
- *   0 - Not used, always zero
- *   A - also called AC, Auxiliary Carry Flag
- *   0 - Not used, always zero
- *   P - Parity Flag
- *   1 - Not used, always one
- *   C - Carry Flag
- */
-enum FLAGS {
-	CARRY = 0x1,
-	PARITY = 0x4,
-	AUXCARRY = 0x10,
-	ZERO = 0x40,
-	SIGN = 0x80
-};
-
 // Initialize the CPU Registers
 void initCPU(cpu_t *cpu);
 
